@@ -12,18 +12,26 @@ import {
   TextField,
   InputAdornment,
   Autocomplete,
+  Typography,
+  Grid,
 } from '@mui/material';
 import {
   Add as AddIcon,
-  Hotel as HotelIcon,
   Person as PersonIcon,
   Payment as PaymentIcon,
   CheckCircle as CheckInIcon,
   ExitToApp as CheckOutIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import CreateReservationDialog from './CreateReservationDialog';
 
-// Mock data for reservations
+// Mock data
+const mockGuests = [
+  { id: 'G001', name: 'John Doe', room: '101 - Ocean View Suite' },
+  { id: 'G002', name: 'Jane Smith', room: '102 - Mountain View Deluxe' },
+  { id: 'G003', name: 'Robert Johnson', room: '103 - Garden Suite' },
+];
+
 const mockReservations = [
   { id: 'R001', guestName: 'John Doe', roomLabel: 'Ocean View Suite', roomId: '101' },
   { id: 'R002', guestName: 'Jane Smith', roomLabel: 'Mountain View Deluxe', roomId: '102' },
@@ -35,7 +43,9 @@ export default function FloatingActionMenu() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogType, setDialogType] = useState(null);
   const [selectedReservation, setSelectedReservation] = useState(null);
+  const [selectedGuest, setSelectedGuest] = useState(null);
   const [serviceFee, setServiceFee] = useState({ amount: '', description: '' });
+  const [createReservationOpen, setCreateReservationOpen] = useState(false);
 
   const handleAction = (action) => {
     setDialogType(action);
@@ -47,6 +57,7 @@ export default function FloatingActionMenu() {
     setDialogOpen(false);
     setDialogType(null);
     setSelectedReservation(null);
+    setSelectedGuest(null);
     setServiceFee({ amount: '', description: '' });
   };
 
@@ -59,74 +70,97 @@ export default function FloatingActionMenu() {
         console.log('Checking out reservation:', selectedReservation);
         break;
       case 'charge':
-        console.log('Charging service fee:', serviceFee);
+        console.log('Charging service fee:', { guest: selectedGuest, ...serviceFee });
         break;
     }
     handleClose();
   };
 
   const actions = [
-    { icon: <AddIcon />, name: 'New Reservation', action: () => navigate('/rooms') },
-    { icon: <CheckInIcon />, name: 'Check In', action: () => handleAction('checkIn') },
-    { icon: <CheckOutIcon />, name: 'Check Out', action: () => handleAction('checkOut') },
-    { icon: <PaymentIcon />, name: 'Charge Service', action: () => handleAction('charge') },
+    { 
+      icon: <AddIcon />, 
+      name: 'New Reservation',
+      tooltipTitle: 'New Reservation', 
+      action: () => setCreateReservationOpen(true)
+    },
+    { 
+      icon: <CheckInIcon />, 
+      name: 'Check In',
+      tooltipTitle: 'Check In Guest', 
+      action: () => handleAction('checkIn')
+    },
+    { 
+      icon: <CheckOutIcon />, 
+      name: 'Check Out',
+      tooltipTitle: 'Check Out Guest', 
+      action: () => handleAction('checkOut')
+    },
+    { 
+      icon: <PaymentIcon />, 
+      name: 'Charge',
+      tooltipTitle: 'Charge Service Fee', 
+      action: () => handleAction('charge')
+    },
   ];
 
-  return (
-    <>
-      <SpeedDial
-        ariaLabel="Actions Menu"
-        sx={{ position: 'fixed', bottom: 16, right: 16 }}
-        icon={<SpeedDialIcon />}
-        onClose={() => setIsOpen(false)}
-        onOpen={() => setIsOpen(true)}
-        open={isOpen}
-      >
-        {actions.map((action) => (
-          <SpeedDialAction
-            key={action.name}
-            icon={action.icon}
-            tooltipTitle={action.name}
-            tooltipOpen
-            onClick={action.action}
-            sx={{
-              '& .MuiSpeedDialAction-staticTooltipLabel': {
-                width: '120px',
-                textAlign: 'center',
-                bgcolor: 'primary.main',
-                color: 'white',
-              },
-            }}
+  const renderDialogContent = () => {
+    switch (dialogType) {
+      case 'checkIn':
+      case 'checkOut':
+        return (
+          <Autocomplete
+            fullWidth
+            options={mockReservations}
+            getOptionLabel={(option) => 
+              `${option.guestName} - ${option.roomLabel} (${option.id})`
+            }
+            value={selectedReservation}
+            onChange={(_, newValue) => setSelectedReservation(newValue)}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Select Reservation"
+                fullWidth
+              />
+            )}
+            renderOption={(props, option) => (
+              <li {...props}>
+                <Box>
+                  <Typography variant="subtitle1">{option.guestName}</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {option.roomLabel} - {option.id}
+                  </Typography>
+                </Box>
+              </li>
+            )}
           />
-        ))}
-      </SpeedDial>
-
-      <Dialog open={dialogOpen} onClose={handleClose}>
-        <DialogTitle>
-          {dialogType === 'checkIn' && 'Check In Guest'}
-          {dialogType === 'checkOut' && 'Check Out Guest'}
-          {dialogType === 'charge' && 'Charge Service Fee'}
-        </DialogTitle>
-        <DialogContent sx={{ pt: 2 }}>
-          {(dialogType === 'checkIn' || dialogType === 'checkOut') && (
-            <Autocomplete
-              options={mockReservations}
-              getOptionLabel={(option) => 
-                `${option.guestName} - ${option.roomLabel} (${option.id})`
-              }
-              value={selectedReservation}
-              onChange={(_, newValue) => setSelectedReservation(newValue)}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label="Select Reservation"
-                  fullWidth
-                />
-              )}
-            />
-          )}
-          {dialogType === 'charge' && (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
+        );
+      case 'charge':
+        return (
+          <Grid container spacing={3}>
+            <Grid item xs={12}>
+              <Autocomplete
+                fullWidth
+                options={mockGuests}
+                getOptionLabel={(option) => `${option.name} - ${option.room}`}
+                value={selectedGuest}
+                onChange={(_, newValue) => setSelectedGuest(newValue)}
+                renderInput={(params) => (
+                  <TextField {...params} label="Select Guest" required />
+                )}
+                renderOption={(props, option) => (
+                  <li {...props}>
+                    <Box>
+                      <Typography variant="subtitle1">{option.name}</Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {option.room}
+                      </Typography>
+                    </Box>
+                  </li>
+                )}
+              />
+            </Grid>
+            <Grid item xs={12}>
               <TextField
                 fullWidth
                 label="Amount"
@@ -136,17 +170,78 @@ export default function FloatingActionMenu() {
                 InputProps={{
                   startAdornment: <InputAdornment position="start">AED</InputAdornment>,
                 }}
+                required
               />
+            </Grid>
+            <Grid item xs={12}>
               <TextField
                 fullWidth
                 label="Description"
                 multiline
-                rows={2}
+                rows={3}
                 value={serviceFee.description}
                 onChange={(e) => setServiceFee({ ...serviceFee, description: e.target.value })}
+                required
               />
-            </Box>
-          )}
+            </Grid>
+          </Grid>
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <>
+      <SpeedDial
+        ariaLabel="Actions Menu"
+        sx={{ 
+          position: 'fixed', 
+          bottom: 16, 
+          right: 16,
+          '& .MuiSpeedDial-actions': {
+            paddingBottom: 1,
+          }
+        }}
+        icon={<SpeedDialIcon />}
+        onClose={() => setIsOpen(false)}
+        onOpen={() => setIsOpen(true)}
+        open={isOpen}
+      >
+        {actions.map((action) => (
+          <SpeedDialAction
+            key={action.name}
+            icon={action.icon}
+            tooltipTitle={action.tooltipTitle}
+            tooltipOpen
+            onClick={action.action}
+            sx={{
+              '& .MuiSpeedDialAction-staticTooltipLabel': {
+                backgroundColor: 'primary.main',
+                color: 'white',
+                fontSize: '0.75rem',
+                padding: '4px 8px',
+                whiteSpace: 'nowrap',
+                minWidth: 'auto',
+              },
+            }}
+          />
+        ))}
+      </SpeedDial>
+
+      <Dialog 
+        open={dialogOpen} 
+        onClose={handleClose}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          {dialogType === 'checkIn' && 'Check In Guest'}
+          {dialogType === 'checkOut' && 'Check Out Guest'}
+          {dialogType === 'charge' && 'Charge Service Fee'}
+        </DialogTitle>
+        <DialogContent sx={{ pt: 2 }}>
+          {renderDialogContent()}
         </DialogContent>
         <DialogActions>
           <Button onClick={handleClose}>Cancel</Button>
@@ -154,7 +249,7 @@ export default function FloatingActionMenu() {
             onClick={handleSubmit}
             variant="contained"
             disabled={
-              (dialogType === 'charge' && (!serviceFee.amount || !serviceFee.description)) ||
+              (dialogType === 'charge' && (!selectedGuest || !serviceFee.amount || !serviceFee.description)) ||
               ((dialogType === 'checkIn' || dialogType === 'checkOut') && !selectedReservation)
             }
           >
@@ -164,6 +259,11 @@ export default function FloatingActionMenu() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <CreateReservationDialog
+        open={createReservationOpen}
+        onClose={() => setCreateReservationOpen(false)}
+      />
     </>
   );
 }
