@@ -1,0 +1,189 @@
+Honey Moon Hotel Reservation System
+
+## Implementation details
+- Permited technologies: React, mui & material icons, emotions, (avoid tailwind and other css styling solutions), avoid ts & use js
+- Use images and a blue-ish theme, fix my typos
+- Web interface for the front-desk operations of the hotel
+- There are two actors: clerks & manager - the do their jobs after they login 
+- clerks - has controls to createGuest (guest account), updateGuest, deleteGuest, makeReservation, cancelReservation, checkIn (mark the reservation as checked in when the guest arrives), checkOut,
+chargeCustomer(fee: ServiceFee), payFee(feeID: String) - mark the fee as payed
+- manager - has controls to configure system restrictions/configrations (price of room type, set late reservation threshold in hours, set late reservation fee, set late checkout penality), see list of requests for reserving a specific room and approve or cancel them, the createRoom (assigning the room label, room type, map of bedType to count, smoking status, description *) , deleteRoom, all the capabilites of the clerk
+
+- since this is the front end, make it such that after u call a some global login(username,passowrd): Home, the Home
+object will contain all the methods applicable to our current role (clerk or manager). We will use this methods to interact with the backend (do not try to implement the true Home or login(), just write a mock that returns the fake but sensible data). Note: home might have only subset of the methods in the following UML (only the applicaple ones for role). The following is UML of all the important classes:
+
+Hotel:
+- rooms: Set<Room>
+- guests: Set<Guest>
+- configuration: Configuration
+
++ Hotel()
++ makeReservation(reservation: Reservation): boolean
++ cancelReservation(reservationID: String): void
++ getAvailableRooms(startDate: int, endDate: int): Set<Room>
++ getRooms(): Set<Room>
++ getGuests(): Set<Guest>
++ createRoom(room: Room): void 
++ deleteRoom(roomID:  String): void 
++ chargeGuest(fee: ServiceFee): void
++ payFee(id: String)
++ checkIn(reservationID: String): void
++ checkOut(reservaitonID: String): void 
++ getRoomFee(roomType: RoomType): double
++ setRoomFee(roomType: RoomType, fee: double): void
++ createGuest(guest: Guest): void
++ deleteGuest(guestID: String): void
++ updateGuest(guestID: String): void 
++ getConfiguration(): Configuraion
++ setRooms(rooms: Set<Room>): void
++ setGuests(rooms: Set<Guest>): void
++ setConfiguration(configuration: Configuration): void
++ getReservation(reservation: String): Reservation
+
+
+Configuration:
+- lateCancellationFee: double
+- lateCancellationThresholdHours: int
+- extensionFeePerDay: double 
+
++ Configuration(lateCancellationFee: double, lateCancellationThresholdHours: + int, extensionFeePerDay: double)
++ getLateCancellationFee(): double
++ getLateCancellationThresholdHours(): int
++ getExtensionFeePerDay(): double
+
+
+Room:
+- reservations: TreeSet<Reservation>
+- adjoiningRooms: Set<Integer>
+- beds: Map<BedType, Integer>
+- roomNumber: int
+- roomLabel: String
+- smokingAllowed: Boolean
+
++ Room()
++ isAvailable(startDate: int, endDate: int): boolean
++ makeReservation(reservation: Reservation): boolean
++ cancelReservation(reservation: Reservation): void
++ getReservations(): TreeSet<Reservation>
++ getAdjoiningRooms(): Set<Integer>
++ getBeds(): Map<BedType, Integer>
++ getRoomNumber(): int
++ getRoomLabel(): String
++ isSmokingAllowed(): boolean
++ setReservations(reservations: TreeSet<Reservation>): void
++ setAdjoiningRooms(adjoiningRooms: Set<Integer>): void
++ setBeds(beds: Map<BedType, Integer>): void
++ setRoomNumber(roomNumber: int): void
++ setRoomLabel(roomLabel: String): void
++ setSmokingAllowed(smokingAllowed: boolean): void
+
+
+RoomType:
+- size: String
+- hasView: boolean
+- maximumDailyRate: double
+
++ RoomType(size: String, hasView: boolean, maximumDailyRate: double)
++ getSize(): String
++ isWithView(): boolean
++ getMaximumDailyRate(): double
+
+
+BedType: enumeration with constants LARGE, MEDIUM, SMALL
+
+
+Guest:
+- name: String
+- guestID: String
+- address: String
+- telephone: String
+- creditCard: String
+- reservations: Set<String>
+- fees: Set<Fees>
+
++ Guest()
++ addReservation(reservation: Reservation): void
++ cancelReservation(reservation: Reservation): void
++ chargeGuest(fee: Fee): void
++ payFee(id: String): void
++ getName(): String
++ getGuestID(): String
++ getAddress(): String
++ getTelephone(): String
++ getCreditCard(): String
++ getReservations(): Set<String>
++ getFees(): Set<Fees>
++ setName(name: String): void
++ setAddress(address: String): void
++ setTelephone(telephone: String): void
++ setCreditCard(creditCard: String): void
++ setReservations(reservations: Set<String>): void
++ setFees(fees: Set<Fees>): void
+
+
+Reservation:
+- reservationID: String
+- startDate: int
+- endDate: int
+- roomID: String
+- checkedIn: boolean
+- approved: true
+
++ Reservation(reservationID: String, startDate: int, endDate: int, roomID: String, checkedIn: boolean = false, approved: boolean = true)
++ getReservationID(): String
++ getStartDate(): int
++ getEndDate(): int
++ getRoomID(): String
++ isCheckedIn(): boolean 
++ isApproved(): boolean
++ setApproved(approved: boolean): void
+
+
+Fee:
+- amount: double
+- id: String
+- guestID: String
+
++ Fee(amount: double, id: String, guestID: String)
++ getAmount(): double
++ getID(): String
++ getGuestID: String
+
+
+RoomFee: extends Fee
+- reservationDetails: String
+
++ ReservationFee(reservationDetails: String, amount: double, id: String, guestID: String)
++ getReservationDetails(): String
+
+
+ServiceFee: extends Fee
+- servicesUsed: String   
+
++ ServiceFee(servicesUsed: String, amount: double, id: String, guestID: String)
++ getServicesUsed(): String
+
+
+PenalityFee: extends Fee
+- penaltyReason: String
+
++ PenaltyFee(penaltyReason: String, amount: double, id: String, guestID: String)
++ getPenaltyReason(): String
+
+
+
+## How the UI be?
+- The app will be a SPA in react
+- first is the Login page then
+- Home page - action bar to create reservation (opens a dialog), statistics (total reservations this week or month, line graphs, room type reservation pi chart ...), links to other pages, a general search bar that enables searching through rooms (id & label), reservations (id), guest (name, id) & display the results by category 
+- Rooms page - displays rooms in a grid/list view (with each item showing some details about the room), grouped by room type (rooms with similar size & hasView status are in the same group regardless of rate), a group should initally display a limtied number of rooms with expand button to show more. clicking on a room opens a Room page. an action button to create a new room that opens a Create Room Dialog
+- Create Room Dialog - give room label, select room type, bed type -> count, smoking status, adjoning rooms (as some kind of drop down that displays room label in large bold, room id under it in small font) ...
+- Room page -  the above info about room, do not make the room type & id editable (it is set once during creation), use some sort of calander view (month - week toglable) to show existing reservations, clicking on reservation opens Reservation page, button to delete room that will be visible only if room has no reservations & that pops confimation dialog before proceeding
+- Reservation page - information about the reservation (nothing is editable), the guest & room info shall navigate to the Guest page & Room page respectively, option to cancel reservation
+- Guests page - displays list of guests, action button to create new one, searchable (name, id ...)
+- Guest page - displays guest info & option to edit detials (id is not editable as always), show current reservation (can go to them by clicking, can be filtered by date & room ...), option to delete guest account, pending fees list with each fee a button to pay it (that invokes hotel.payFee(feeID))
+
+If the user is not a clerk, but a manager, there should be a page to configure the hotel restrictions (penality fee amount & theshold, create room types & set their prices), another page to create & manage clerk accounts
+
+- feel free to add features such as searching & statistics
+
